@@ -1,0 +1,50 @@
+#!/bin/bash
+
+HOST='api.hipchat.com'
+AUTH_TOKEN=""
+ROOM_ID=""
+
+# list available hipchat rooms
+list_rooms() {
+    curl -sS "https://api.hipchat.com/v2/room?auth_token=$AUTH_TOKEN"
+}
+
+# list available hipchat users
+list_users() {
+    curl -sS "https://api.hipchat.com/v2/user?auth_token=$AUTH_TOKEN"
+}
+
+# fetch chat history for this room
+get_history() {
+    curl -sS "https://api.hipchat.com/v2/room/$ROOM_ID/history?max-results=10000&auth_token=$AUTH_TOKEN"
+}
+
+while getopts ":ruh" OPTNAME
+do
+    case "$OPTNAME" in
+    "r")
+        list_rooms
+        exit
+        ;;
+    "u")
+        list_users
+        exit
+        ;;
+    "h")
+        get_history
+        exit
+        ;;
+    "?")
+        echo "Unknown option $OPTARG"
+        ;;
+    *)
+    # should not occur
+        echo "Unknown error while processing options"
+        ;;
+    esac
+done
+
+# send
+curl -sS \
+    --data-urlencode "auth_token=$AUTH_TOKEN" \
+    --data-urlencode "room_id=$ROOM_ID" \

@@ -1,0 +1,46 @@
+#!/bin/bash
+
+linktuesday=$(bash hipchat -h | jsawk 'var messages = "";
+
+function convertISO8601ToDate(dtstr) {
+    dtstr = dtstr.replace(/\D/g," ");
+
+    dtstr = dtstr.replace(/\s+$/,"");
+
+    var dtcomps = dtstr.split(" ");
+
+    if (dtcomps.length < 3) return "Invalid date";
+
+    if (dtcomps.length < 4) {
+        dtcomps[3] = 0;
+        dtcomps[4] = 0;
+        dtcomps[5] = 0;
+    }
+
+    dtcomps[1]--;
+
+    var convdt = new Date(Date.UTC(dtcomps[0],dtcomps[1],dtcomps[2],dtcomps[3],dtcomps[4],dtcomps[5]));
+
+    return convdt.toUTCString();
+}
+
+for (var key in this.items) {
+    messages += convertISO8601ToDate(this.items[key].date);
+    messages += " - ";
+    messages += this.items[key].from.name;
+    messages += " - ";
+    messages += this.items[key].message;
+    messages += "\n";
+}
+
+return messages;' | grep -i 'linktuesday')
+
+linktuesday=${linktuesday//$'\n'/\\n} #Escape newlines.
+linktuesday=${linktuesday//$'"'/\\\"} #Escape double quotes.
+linktuesday=${linktuesday//$'&'/and} #Replace &amps.
+now=$(date +"%d-%m-%Y")
+
+#curl -u <userId>:<userSecret> -X POST -H 'Content-Type: application/json' -d'{"type":"page","title":"Latest Link Tuesday","space":{"key":"LT"},"body":{"storage":{"value":"'"$linktuesday"'","representation":"wiki"}}}' <API URL> | python -mjson.tool
+
+history=$(curl -u <userId>:<userSecret> -X GET "<API URL>" | jsawk -n 'out(this.lastUpdated.number)')
+curl -u <userId>:<userSecret> -X PUT -H 'Content-Type: application/json' -d'{"id":"","type":"page","title":"Latest Link Tuesday","space":{"key":"LT"},"body":{"storage":{"value":"'"$linktuesday"'","representation":"wiki"}},"version":{"number":"'"$((history+1))"'"}}' <API URL> | python -mjson.tool
